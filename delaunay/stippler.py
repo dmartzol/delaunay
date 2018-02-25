@@ -10,26 +10,31 @@ from delaunay.settings import NUMBER_OF_POINTS, N_ITER, THRESHOLD, PIXELS_PER_RE
 
 # TODO: the input should be an image instead of filename
 class Stippler(object):
-    def __init__(self, filename):
-        self.filename = filename
-        self.density = self.density_array(filename)
+    def __init__(self, image):
+        self.image = self.mode_L(image)
+        self.density = self.density_array()
         self.shape = self.density.shape
         self.density_P = self.density.cumsum(axis=1)
         self.density_Q = self.density_P.cumsum(axis=1)
 
+    def mode_L(self, image):
+        if image.mode is 'L':
+            return image
+        else:
+            return image.convert('L')
+
     def start(self):
         # Initialization
         points = self.initialization(NUMBER_OF_POINTS, self.density)
-        print("Nb points:", NUMBER_OF_POINTS)
-        print("Nb iterations:", N_ITER)
+        print("Number points:", NUMBER_OF_POINTS)
+        print("Number iterations:", N_ITER)
 
         for i in tqdm.trange(N_ITER):
             regions, points = voronoi.centroids(points, self.density, self.density_P, self.density_Q)
         return points, self.shape
 
-    def density_array(self, filename):
-        density = Image.open(filename)
-        density = np.array(density.convert('L'))
+    def density_array(self):
+        density = np.array(self.image)
         zoom = (NUMBER_OF_POINTS * PIXELS_PER_REGION) / (density.shape[0] * density.shape[1])
         zoom = int(round(np.sqrt(zoom)))
         # If the image is big the zoom will be less than 1 and approximated to 0

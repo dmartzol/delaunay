@@ -5,11 +5,14 @@
 BLACK_LIMIT = 180
 WHITE_LIMIT = 250
 
-# TODO: Figure what this setting is
+# TODO: forgot what this setting is ¯\_(ツ)_/¯
 FADE = 60
 
+# Triangulation settings
+PEN_TIP = 0.5  # in mm
+
 # Stippler
-NUMBER_OF_POINTS = 2000
-N_ITER = 100
+NUMBER_OF_POINTS = 1000
+N_ITER = 10
 THRESHOLD = 250
 PIXELS_PER_REGION = 50

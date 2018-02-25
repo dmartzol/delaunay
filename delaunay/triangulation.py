@@ -1,7 +1,7 @@
 import os
 from scipy.spatial import Delaunay
 from delaunay.image import get_points
-
+from delaunay.settings import PEN_TIP
 try:
     import cairocffi as cairo
 except ImportError:
@@ -12,6 +12,7 @@ class Triangulation(object):
     """
     Input should be a dithered image in mode L
     """
+
     def __init__(self, dithered_image):
         self.width, self.height = dithered_image.size
         self.image = dithered_image
@@ -30,6 +31,7 @@ class Triangulation(object):
         """
         Filtering list for repeated paths
         """
+
         new_list = []
         for element in l:
             inverted = element[::-1]
@@ -46,12 +48,14 @@ class Triangulation(object):
         We print twice most of the lines here but it is faster to filter them
         and it doesn't really mater for raster files
         """
-        line_width = 1.0
+
+        RATIO = PEN_TIP / 300
+        LINE_WIDTH = max(width, height) * RATIO
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
         context = cairo.Context(surface)
         context.set_line_cap(cairo.LINE_CAP_ROUND)
         context.set_line_join(cairo.LINE_JOIN_ROUND)
-        context.set_line_width(line_width)
+        context.set_line_width(LINE_WIDTH)
         with context:
             context.set_source_rgb(1, 1, 1)
             context.paint()
@@ -80,7 +84,7 @@ class Triangulation(object):
         context = cairo.Context(surface_svg)
         context.set_line_cap(cairo.LINE_CAP_ROUND)
         context.set_line_join(cairo.LINE_JOIN_ROUND)
-        context.set_line_width(1)
+        context.set_line_width(0.5)
         with context:
             context.set_source_rgb(1, 1, 1)
             context.paint()
