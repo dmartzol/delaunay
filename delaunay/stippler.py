@@ -1,14 +1,11 @@
 import tqdm
-# import os.path
 import scipy.misc
 import scipy.ndimage
-from PIL import Image
 import numpy as np
 import delaunay.voronoi as voronoi
 from delaunay.settings import NUMBER_OF_POINTS, N_ITER, THRESHOLD, PIXELS_PER_REGION
 
 
-# TODO: the input should be an image instead of filename
 class Stippler(object):
     def __init__(self, image):
         self.image = self.mode_L(image)
@@ -16,6 +13,7 @@ class Stippler(object):
         self.shape = self.density.shape
         self.density_P = self.density.cumsum(axis=1)
         self.density_Q = self.density_P.cumsum(axis=1)
+        self.points = None
 
     def mode_L(self, image):
         if image.mode is 'L':
@@ -23,7 +21,7 @@ class Stippler(object):
         else:
             return image.convert('L')
 
-    def start(self):
+    def find_points(self):
         # Initialization
         points = self.initialization(NUMBER_OF_POINTS, self.density)
         print("Number points:", NUMBER_OF_POINTS)
@@ -31,7 +29,7 @@ class Stippler(object):
 
         for i in tqdm.trange(N_ITER):
             regions, points = voronoi.centroids(points, self.density, self.density_P, self.density_Q)
-        return points, self.shape
+        self.points = points
 
     def density_array(self):
         density = np.array(self.image)

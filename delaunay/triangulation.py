@@ -1,7 +1,7 @@
 import os
 from scipy.spatial import Delaunay
 from delaunay.image import get_points
-from delaunay.settings import PEN_TIP
+from delaunay.settings import PEN_TIP, LONGEST_SIDE_PRINT
 try:
     import cairocffi as cairo
 except ImportError:
@@ -16,21 +16,18 @@ class Triangulation(object):
     def __init__(self, dithered_image):
         self.width, self.height = dithered_image.size
         self.image = dithered_image
+        self.tri = None
+        self.points = get_points(self.image)
 
-    def triangulate(self, output_filename='out.png'):
-        points = get_points(self.image)
-        triangulation = Delaunay(points)
-        print("Number of points: {}".format(len(points)))
-        self.render_triangulation(
-            triangulation,
-            self.image.width,
-            self.image.height,
-            output_filename)
+    def triangulate(self):
+        self.tri = Delaunay(self.points)
+        print("Number of points: {}".format(len(self.points)))
 
     def filter_path_list(self, l):
         """
-        Filtering list for repeated paths
+        Deleting repeated paths from list
         """
+        # TODO: Optimize
 
         new_list = []
         for element in l:
@@ -43,15 +40,15 @@ class Triangulation(object):
                 new_list.append(element)
         return new_list
 
-    def render_as_png(self, tri, width, height, output_filename):
+    def render_as_png(self, output):
         """
         We print twice most of the lines here but it is faster to filter them
         and it doesn't really mater for raster files
         """
 
-        RATIO = PEN_TIP / 300
-        LINE_WIDTH = max(width, height) * RATIO
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        RATIO = PEN_TIP / LONGEST_SIDE_PRINT
+        LINE_WIDTH = max(self.image.width, self.image.height) * RATIO
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.image.width, self.image.height)
         context = cairo.Context(surface)
         context.set_line_cap(cairo.LINE_CAP_ROUND)
         context.set_line_join(cairo.LINE_JOIN_ROUND)
@@ -59,28 +56,26 @@ class Triangulation(object):
         with context:
             context.set_source_rgb(1, 1, 1)
             context.paint()
-        for triangle in tri.simplices:
-            x, y = tri.points[triangle[-1]]
+        for triangle in self.tri.simplices:
+            x, y = self.tri.points[triangle[-1]]
             context.move_to(x, y)
             for vertex in triangle:
-                x, y = tri.points[vertex]
+                x, y = self.tri.points[vertex]
                 context.line_to(x, y)
         context.stroke()
-        surface.write_to_png(output_filename)
+        surface.write_to_png(output)
 
-    def render_as_svg(self, tri, width, height, output_filename):
-        #TODO: Optimize this algorithm one day
-        # converting points to paths
+    def render_as_svg(self, output):
         paths = []
-        for simplice in tri.simplices:
+        for simplice in self.tri.simplices:
             for i, _ in enumerate(simplice):
                 paths.append([simplice[i - 1], simplice[i]])
 
         # Filtering list for repeated paths
         paths = self.filter_path_list(paths)
 
-        fo = open(output_filename, 'wb')
-        surface_svg = cairo.SVGSurface(fo, width, height)
+        fo = open(output, 'wb')
+        surface_svg = cairo.SVGSurface(fo, self.image.width, self.image.height)
         context = cairo.Context(surface_svg)
         context.set_line_cap(cairo.LINE_CAP_ROUND)
         context.set_line_join(cairo.LINE_JOIN_ROUND)
@@ -90,16 +85,16 @@ class Triangulation(object):
             context.paint()
         # Finally drawing paths
         for path in paths:
-            x, y = tri.points[path[0]]
+            x, y = self.tri.points[path[0]]
             context.move_to(x, y)
-            x, y = tri.points[path[1]]
+            x, y = self.tri.points[path[1]]
             context.line_to(x, y)
         context.stroke()
         surface_svg.finish()
 
-    def render_triangulation(self, tri, width, height, output_filename):
-        name, file_extension = os.path.splitext(output_filename)
+    def save(self, output='triangulation.png'):
+        name, file_extension = os.path.splitext(output)
         if file_extension == '.png':
-            self.render_as_png(tri, width, height, output_filename)
+            self.render_as_png(output)
         if file_extension == '.svg':
-            self.render_as_svg(tri, width, height, output_filename)
+            self.render_as_svg(output)
