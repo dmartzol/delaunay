@@ -1,4 +1,6 @@
 import tqdm
+import sys
+import time
 import scipy.misc
 import scipy.ndimage
 import numpy as np
@@ -14,6 +16,7 @@ class Stippler(object):
         self.density_P = self.density.cumsum(axis=1)
         self.density_Q = self.density_P.cumsum(axis=1)
         self.points = None
+        self.iteration = 0
 
     def mode_L(self, image):
         if image.mode is 'L':
@@ -21,14 +24,28 @@ class Stippler(object):
         else:
             return image.convert('L')
 
-    def find_points(self):
+    def find_points(self, mode='finite'):
         # Initialization
         points = self.initialization(NUMBER_OF_POINTS, self.density)
         print("Number points:", NUMBER_OF_POINTS)
-        print("Number iterations:", N_ITER)
+        if mode is 'finite':
+            print("Number iterations:", N_ITER)
+            for i in tqdm.trange(N_ITER):
+                regions, points = voronoi.centroids(points, self.density, self.density_P, self.density_Q)
+        elif mode is 'infinite':
+            start = time.time()
+            print("Press Ctrl-C to stop.")
+            try:
+                while True:
+                    regions, points = voronoi.centroids(points, self.density, self.density_P, self.density_Q)
+                    self.iteration += 1
+                    sys.stdout.write("\rIteration: %i" % self.iteration)
+                    sys.stdout.flush()
+            except KeyboardInterrupt:
+                print('\n')
+                t = (time.time() - start) / (60*60)
+                print('{} hours'.format(round(t, 2)))
 
-        for i in tqdm.trange(N_ITER):
-            regions, points = voronoi.centroids(points, self.density, self.density_P, self.density_Q)
         self.points = points
 
     def density_array(self):

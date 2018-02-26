@@ -91,6 +91,13 @@ def dither(image):
     return dithered
 
 
+def black_and_white(image):
+    image = image.convert('1')  # Pillow uses FLOYDSTEINBERG dithering
+    # Converting to L due to bug in PIL
+    image = image.convert('L')
+    return image
+
+
 def grayish_black(x):
     # Incrementing the limit makes the blacks whiter
     if x < BLACK_LIMIT:
@@ -101,10 +108,3 @@ def grayish_black(x):
 def fade_all(x):
     # Incrementing the fade makes the image whiter
     return clamp(x + FADE)
-
-
-def black_and_white(image):
-    image = image.convert('1')
-    # Converting to L due to bug in PIL
-    image = image.convert('L')
-    return image

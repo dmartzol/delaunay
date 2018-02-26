@@ -11,7 +11,6 @@ except ImportError:
     cairo = None
 
 # TODO: Voronoi triangulation
-# TODO: input and output of clases should be images and I save them form here
 
 
 def main():
@@ -22,8 +21,9 @@ def main():
 
     image = Image.open(filename)
     stippler = Stippler(image)
-    stippler.find_points()
+    stippler.find_points(mode='infinite')
     stippled_image = raster_points(stippler.points, stippler.shape)
+    stippled_image.save('dithered.png')
 
     triangulation = Triangulation(stippled_image)
     triangulation.triangulate()
